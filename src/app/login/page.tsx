@@ -83,9 +83,7 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="mt-4 text-xs text-zinc-500">
-          Admin default: <span className="font-mono">admin</span> / <span className="font-mono">Admin@123</span>
-        </div>
+       
       </div>
     </div>
   );
