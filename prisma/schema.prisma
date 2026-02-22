@@ -1,0 +1,226 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  STUDENT
+}
+
+enum AttemptStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  SUBMITTED
+  LOCKED
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+  SHORT_ANSWER
+}
+
+model User {
+  id           String   @id @default(cuid())
+  role         Role
+  username     String   @unique
+  passwordHash String
+
+  firstName String?
+  lastName  String?
+  studentId String?  @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessions    Session[]
+  assignments ExamAssignment[]
+  attempts    Attempt[]
+  auditLogs   AuditLog[] @relation("AuditLogActor")
+  targetAuditLogs AuditLog[] @relation("AuditLogTargetUser")
+}
+
+model Session {
+  id             String   @id @default(cuid())
+  userId         String
+  tokenHash      String   @unique
+  expiresAt      DateTime
+  lastActivityAt DateTime @default(now())
+  createdAt      DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Exam {
+  id               String   @id @default(cuid())
+  title            String
+  academicYear     Int
+  durationMinutes  Int
+  examPasswordHash String
+  isActive         Boolean  @default(false)
+  resultsPublished Boolean  @default(false)
+
+  maxQuestions Int?
+  totalMarks   Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  questions   Question[]
+  assignments ExamAssignment[]
+  attempts    Attempt[]
+  auditLogs   AuditLog[]
+
+  @@index([academicYear])
+}
+
+model Question {
+  id      String       @id @default(cuid())
+  examId  String
+  type    QuestionType
+  prompt  String       @db.Text
+  imageUrl String?
+  options Json?
+  correct Json?
+  marks   Int          @default(1)
+  order   Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  exam     Exam     @relation(fields: [examId], references: [id], onDelete: Restrict)
+  answers  Answer[]
+  changes  AuditLogQuestionChange[]
+
+  @@unique([examId, order])
+  @@index([examId])
+}
+
+model ExamAssignment {
+  id        String   @id @default(cuid())
+  examId    String
+  studentId String
+  createdAt DateTime @default(now())
+
+  exam    Exam @relation(fields: [examId], references: [id], onDelete: Cascade)
+  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([examId, studentId])
+  @@index([studentId])
+}
+
+model Attempt {
+  id              String        @id @default(cuid())
+  examId          String
+  studentId       String
+  status          AttemptStatus @default(NOT_STARTED)
+  startedAt       DateTime?
+  submittedAt     DateTime?
+  timeTakenSeconds Int?
+
+  lockedAt      DateTime?
+  lockedReason  String?
+
+  lockToken      String?
+  lockUpdatedAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  exam    Exam @relation(fields: [examId], references: [id], onDelete: Restrict)
+  student User @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  answers Answer[]
+  result  Result?
+  auditLogs AuditLog[]
+
+  @@unique([examId, studentId])
+  @@index([studentId])
+}
+
+model Answer {
+  id         String   @id @default(cuid())
+  attemptId  String
+  questionId String
+  value      Json?
+  flagged    Boolean  @default(false)
+  answeredAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  attempt  Attempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Restrict)
+
+  @@unique([attemptId, questionId])
+  @@index([attemptId])
+}
+
+model Result {
+  id        String   @id @default(cuid())
+  attemptId String   @unique
+  score     Int
+  maxScore  Int
+  breakdown Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  attempt Attempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+}
+
+enum AuditAction {
+  ADMIN_RESET_ATTEMPT
+  CHEAT_VIOLATION
+  ADMIN_RESET_PASSWORD
+  PUBLISH_RESULTS
+  HIDE_RESULTS
+  UPDATE_ANSWER_KEY
+  REGENERATE_RESULTS
+}
+
+model AuditLog {
+  id        String      @id @default(cuid())
+  action    AuditAction
+  actorId   String?
+  examId    String?
+  attemptId String?
+  targetUserId String?
+  meta      Json?
+  createdAt DateTime    @default(now())
+
+  actor   User?   @relation("AuditLogActor", fields: [actorId], references: [id], onDelete: SetNull)
+  exam    Exam?   @relation(fields: [examId], references: [id], onDelete: SetNull)
+  attempt Attempt? @relation(fields: [attemptId], references: [id], onDelete: SetNull)
+  targetUser User? @relation("AuditLogTargetUser", fields: [targetUserId], references: [id], onDelete: SetNull)
+  questionChanges AuditLogQuestionChange[]
+
+  @@index([action])
+  @@index([examId])
+  @@index([attemptId])
+}
+
+model AuditLogQuestionChange {
+  id         String @id @default(cuid())
+  auditLogId String
+  questionId String
+  before     Json?
+  after      Json?
+
+  auditLog AuditLog @relation(fields: [auditLogId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Restrict)
+
+  @@index([auditLogId])
+}
