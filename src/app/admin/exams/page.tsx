@@ -114,8 +114,12 @@ export default function AdminExamsPage() {
     });
 
     if (!res.ok) {
-      const data = (await res.json().catch(() => null)) as { error?: string } | null;
-      setError(data?.error ?? "FAILED_TO_CREATE");
+      const data = (await res.json().catch(() => null)) as { error?: string; message?: string } | null;
+      if (!data) {
+        setError(`FAILED_TO_CREATE (HTTP_${res.status})`);
+        return;
+      }
+      setError(data.message ? `${data.error ?? "FAILED_TO_CREATE"}: ${data.message}` : (data.error ?? "FAILED_TO_CREATE"));
       return;
     }
 
