@@ -245,7 +245,7 @@ export default function AdminEditQuestionPage() {
             )}
 
             <input
-              className="block w-full text-sm"
+              className="block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-zinc-900 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-zinc-800 disabled:opacity-60"
               accept="image/png,image/jpeg,image/webp"
               disabled={busy}
               onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}

@@ -1,20 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-admin";
-import crypto from "crypto";
-import path from "path";
-import { mkdir, writeFile } from "fs/promises";
 
 export const runtime = "nodejs";
 
-const MAX_BYTES = 5 * 1024 * 1024;
-
-function safeExt(mime: string) {
-  if (mime === "image/png") return ".png";
-  if (mime === "image/jpeg") return ".jpg";
-  if (mime === "image/webp") return ".webp";
-  return "";
-}
+const MAX_BYTES = 1 * 1024 * 1024;
 
 export async function POST(
   req: Request,
@@ -43,8 +33,7 @@ export async function POST(
     return NextResponse.json({ error: "INVALID_FILE_TYPE" }, { status: 400 });
   }
 
-  const ext = safeExt(file.type);
-  if (!ext) {
+  if (!(["image/png", "image/jpeg", "image/webp"] as const).includes(file.type as any)) {
     return NextResponse.json({ error: "UNSUPPORTED_IMAGE_TYPE" }, { status: 400 });
   }
 
@@ -53,17 +42,7 @@ export async function POST(
     return NextResponse.json({ error: "FILE_TOO_LARGE" }, { status: 400 });
   }
 
-  const hash = crypto.createHash("sha256").update(buf).digest("hex").slice(0, 16);
-  const filename = `${questionId}_${Date.now()}_${hash}${ext}`;
-
-  const relDir = path.join("uploads", "questions");
-  const relPath = path.join(relDir, filename);
-  const absPath = path.join(process.cwd(), "public", relPath);
-
-  await mkdir(path.dirname(absPath), { recursive: true });
-  await writeFile(absPath, buf);
-
-  const imageUrl = `/${relPath.replace(/\\/g, "/")}`;
+  const imageUrl = `data:${file.type};base64,${buf.toString("base64")}`;
 
   const question = await prisma.question.update({
     where: { id: questionId },
