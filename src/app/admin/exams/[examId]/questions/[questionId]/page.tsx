@@ -127,7 +127,7 @@ export default function AdminEditQuestionPage() {
       if (!res.ok) {
         const e = (data as { error?: string; message?: string } | null)?.error;
         const m = (data as { error?: string; message?: string } | null)?.message;
-        setError(e ?? m ?? `HTTP_${res.status}`);
+        setError(e && m ? `${e}: ${m}` : e ?? m ?? `HTTP_${res.status}`);
         return;
       }
 
@@ -156,7 +156,7 @@ export default function AdminEditQuestionPage() {
       if (!res.ok) {
         const e = (data as { error?: string; message?: string } | null)?.error;
         const m = (data as { error?: string; message?: string } | null)?.message;
-        setError(e ?? m ?? `HTTP_${res.status}`);
+        setError(e && m ? `${e}: ${m}` : e ?? m ?? `HTTP_${res.status}`);
         return;
       }
 

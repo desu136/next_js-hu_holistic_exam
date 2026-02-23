@@ -92,7 +92,7 @@ model Question {
   examId  String
   type    QuestionType
   prompt  String       @db.Text
-  imageUrl String?
+  imageUrl String?      @db.LongText
   options Json?
   correct Json?
   marks   Int          @default(1)
