@@ -120,12 +120,14 @@ export default function AdminEditQuestionPage() {
       });
 
       const data = (await res.json().catch(() => null)) as
-        | { error?: string }
+        | { error?: string; message?: string }
         | { question?: { imageUrl?: string | null } }
         | null;
 
       if (!res.ok) {
-        setError((data as { error?: string } | null)?.error ?? "FAILED");
+        const e = (data as { error?: string; message?: string } | null)?.error;
+        const m = (data as { error?: string; message?: string } | null)?.message;
+        setError(e ?? m ?? `HTTP_${res.status}`);
         return;
       }
 
@@ -147,12 +149,14 @@ export default function AdminEditQuestionPage() {
     try {
       const res = await fetch(`/api/admin/questions/${questionId}/image`, { method: "DELETE" });
       const data = (await res.json().catch(() => null)) as
-        | { error?: string }
+        | { error?: string; message?: string }
         | { question?: { imageUrl?: string | null } }
         | null;
 
       if (!res.ok) {
-        setError((data as { error?: string } | null)?.error ?? "FAILED");
+        const e = (data as { error?: string; message?: string } | null)?.error;
+        const m = (data as { error?: string; message?: string } | null)?.message;
+        setError(e ?? m ?? `HTTP_${res.status}`);
         return;
       }
 
