@@ -136,8 +136,12 @@ export default function StudentExamAttemptPage() {
     try {
       const res = await fetch(`/api/student/exams/${examId}/attempt`);
       if (!res.ok) {
-        const data = (await res.json().catch(() => null)) as { error?: string } | null;
-        setError(data?.error ?? "FAILED_TO_LOAD");
+        const data = (await res.json().catch(() => null)) as { error?: string; message?: string } | null;
+        if (!data) {
+          setError(`FAILED_TO_LOAD (HTTP_${res.status})`);
+          return;
+        }
+        setError(data.message ? `${data.error ?? "FAILED_TO_LOAD"}: ${data.message}` : (data.error ?? "FAILED_TO_LOAD"));
         return;
       }
       const data = (await res.json()) as { exam: Exam; attempt: Attempt };
