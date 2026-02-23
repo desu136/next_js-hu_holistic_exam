@@ -17,6 +17,15 @@ export default function AdminStudentsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [editing, setEditing] = useState<{
+    id: string;
+    firstName: string;
+    lastName: string;
+    studentId: string;
+  } | null>(null);
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
   const [resettingId, setResettingId] = useState<string | null>(null);
   const [resetResult, setResetResult] = useState<
     | {
@@ -170,6 +179,55 @@ export default function AdminStudentsPage() {
   }
 
   const rows = useMemo(() => students, [students]);
+
+  async function saveEdit() {
+    if (!editing) return;
+    setError(null);
+    setSavingId(editing.id);
+    try {
+      const res = await fetch(`/api/admin/students/${editing.id}`,
+        {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            firstName: editing.firstName,
+            lastName: editing.lastName.trim().length === 0 ? null : editing.lastName,
+            studentId: editing.studentId.trim().length === 0 ? null : editing.studentId,
+          }),
+        },
+      );
+
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as { error?: string } | null;
+        setError(data?.error ?? "FAILED_TO_UPDATE");
+        return;
+      }
+
+      setEditing(null);
+      await load();
+    } finally {
+      setSavingId(null);
+    }
+  }
+
+  async function deleteStudent(studentIdToDelete: string) {
+    const ok = window.confirm("Delete this student? This cannot be undone.");
+    if (!ok) return;
+    setError(null);
+    setDeletingId(studentIdToDelete);
+    try {
+      const res = await fetch(`/api/admin/students/${studentIdToDelete}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as { error?: string } | null;
+        setError(data?.error ?? "FAILED_TO_DELETE");
+        return;
+      }
+      if (editing?.id === studentIdToDelete) setEditing(null);
+      await load();
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   return (
     <div>
@@ -338,18 +396,91 @@ export default function AdminStudentsPage() {
                   <tr key={s.id} className="border-t">
                     <td className="py-2 font-mono">{s.username}</td>
                     <td className="py-2">
-                      {(s.firstName ?? "") + (s.lastName ? ` ${s.lastName}` : "")}
+                      {editing?.id === s.id ? (
+                        <div className="grid gap-2">
+                          <input
+                            className="input h-9"
+                            value={editing.firstName}
+                            onChange={(e) => setEditing({ ...editing, firstName: e.target.value })}
+                          />
+                          <input
+                            className="input h-9"
+                            value={editing.lastName}
+                            onChange={(e) => setEditing({ ...editing, lastName: e.target.value })}
+                            placeholder="Last name (optional)"
+                          />
+                        </div>
+                      ) : (
+                        (s.firstName ?? "") + (s.lastName ? ` ${s.lastName}` : "")
+                      )}
                     </td>
-                    <td className="py-2 font-mono">{s.studentId}</td>
+                    <td className="py-2 font-mono">
+                      {editing?.id === s.id ? (
+                        <input
+                          className="input h-9"
+                          value={editing.studentId}
+                          onChange={(e) => setEditing({ ...editing, studentId: e.target.value })}
+                        />
+                      ) : (
+                        s.studentId
+                      )}
+                    </td>
                     <td className="py-2 text-right">
-                      <button
-                        className="btn-ghost px-3 py-1 text-xs disabled:opacity-50"
-                        disabled={resettingId === s.id}
-                        onClick={() => void resetPassword(s.id)}
-                        type="button"
-                      >
-                        {resettingId === s.id ? "Resetting..." : "Reset password"}
-                      </button>
+                      <div className="flex flex-wrap justify-end gap-2">
+                        {editing?.id === s.id ? (
+                          <>
+                            <button
+                              className="btn-primary px-3 py-1 text-xs disabled:opacity-50"
+                              disabled={savingId === s.id}
+                              onClick={() => void saveEdit()}
+                              type="button"
+                            >
+                              {savingId === s.id ? "Saving..." : "Save"}
+                            </button>
+                            <button
+                              className="btn-ghost px-3 py-1 text-xs"
+                              disabled={savingId === s.id}
+                              onClick={() => setEditing(null)}
+                              type="button"
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              className="btn-ghost px-3 py-1 text-xs"
+                              onClick={() =>
+                                setEditing({
+                                  id: s.id,
+                                  firstName: s.firstName ?? "",
+                                  lastName: s.lastName ?? "",
+                                  studentId: s.studentId ?? "",
+                                })
+                              }
+                              type="button"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              className="btn-ghost px-3 py-1 text-xs disabled:opacity-50"
+                              disabled={resettingId === s.id || deletingId === s.id}
+                              onClick={() => void resetPassword(s.id)}
+                              type="button"
+                            >
+                              {resettingId === s.id ? "Resetting..." : "Reset password"}
+                            </button>
+                            <button
+                              className="btn-ghost px-3 py-1 text-xs disabled:opacity-50"
+                              disabled={deletingId === s.id || resettingId === s.id}
+                              onClick={() => void deleteStudent(s.id)}
+                              type="button"
+                            >
+                              {deletingId === s.id ? "Deleting..." : "Delete"}
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

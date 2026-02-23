@@ -23,6 +23,7 @@ export function AppShell({
           { href: "/admin", label: "Dashboard" },
           { href: "/admin/students", label: "Students" },
           { href: "/admin/exams", label: "Exams" },
+          { href: "/admin/settings", label: "Settings" },
         ]
       : [
           { href: "/student", label: "Home" },
@@ -37,7 +38,7 @@ export function AppShell({
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-3 md:px-10">
           <div className="flex items-center gap-3">
             <Link className="text-sm font-semibold tracking-tight text-emerald-900" href={homeHref}>
-              H-Exam
+              Holistic Exam
             </Link>
             <span className="hidden text-xs text-zinc-500 md:inline">{user.role}</span>
           </div>
@@ -76,7 +77,7 @@ export function AppShell({
           <footer className="mt-auto border-t border-emerald-100 bg-gradient-to-b from-white to-emerald-100/60 pt-6 text-xs text-zinc-600">
             <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
               <div>
-                <span className="font-medium text-emerald-900">H-Exam</span> — Online Exam System
+                <span className="font-medium text-emerald-900">Holistic Exam</span> — Online Exam System
               </div>
               <div>For support, contact your administrator.</div>
             </div>

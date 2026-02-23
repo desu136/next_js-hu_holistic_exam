@@ -63,8 +63,9 @@ export default function StudentResultsPage() {
               <thead>
                 <tr className="text-left text-zinc-600">
                   <th className="py-2">Exam</th>
-                  <th className="py-2">Year</th>
-                  <th className="py-2">Score</th>
+                  <th className="py-2 sm:hidden">Year / Score</th>
+                  <th className="hidden py-2 sm:table-cell">Year</th>
+                  <th className="hidden py-2 sm:table-cell">Score</th>
                   <th className="py-2">Updated</th>
                 </tr>
               </thead>
@@ -72,8 +73,16 @@ export default function StudentResultsPage() {
                 {rows.map((r) => (
                   <tr key={r.attempt.exam.id} className="border-t">
                     <td className="py-2">{r.attempt.exam.title}</td>
-                    <td className="py-2 font-mono">{r.attempt.exam.academicYear}</td>
-                    <td className="py-2 font-mono">
+                    <td className="py-2 sm:hidden">
+                      <div className="grid gap-1">
+                        <div className="font-mono">{r.attempt.exam.academicYear}</div>
+                        <div className="font-mono">
+                          {r.score} / {r.maxScore}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="hidden py-2 font-mono sm:table-cell">{r.attempt.exam.academicYear}</td>
+                    <td className="hidden py-2 font-mono sm:table-cell">
                       {r.score} / {r.maxScore}
                     </td>
                     <td className="py-2 text-zinc-600">{new Date(r.updatedAt).toLocaleString()}</td>
