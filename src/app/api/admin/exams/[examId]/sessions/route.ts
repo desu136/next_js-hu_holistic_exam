@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/require-admin";
 
+function timeUpCutoff(durationMinutes: number) {
+  return new Date(Date.now() - durationMinutes * 60 * 1000);
+}
+
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ examId: string }> },
@@ -24,8 +28,33 @@ export async function GET(
 
   if (!exam) return NextResponse.json({ error: "EXAM_NOT_FOUND" }, { status: 404 });
 
+  const cutoff = timeUpCutoff(exam.durationMinutes);
+  const expired = await prisma.attempt.findMany({
+    where: {
+      examId,
+      status: "IN_PROGRESS",
+      startedAt: { not: null, lte: cutoff },
+    },
+    select: { id: true },
+  });
+
+  if (expired.length > 0) {
+    const now = new Date();
+    const durationSeconds = exam.durationMinutes * 60;
+    await prisma.attempt.updateMany({
+      where: { id: { in: expired.map((a) => a.id) } },
+      data: {
+        status: "SUBMITTED",
+        submittedAt: now,
+        timeTakenSeconds: durationSeconds,
+        lockToken: null,
+        lockUpdatedAt: now,
+      },
+    });
+  }
+
   const attempts = await prisma.attempt.findMany({
-    where: { examId, status: "IN_PROGRESS" },
+    where: { examId, status: { in: ["IN_PROGRESS", "LOCKED"] } },
     orderBy: [{ lockUpdatedAt: "desc" }, { updatedAt: "desc" }],
     select: {
       id: true,
@@ -33,6 +62,8 @@ export async function GET(
       startedAt: true,
       lockUpdatedAt: true,
       lockToken: true,
+      lockedAt: true,
+      lockedReason: true,
       student: { select: { username: true, firstName: true, lastName: true, studentId: true } },
     },
   });

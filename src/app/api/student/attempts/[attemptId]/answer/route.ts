@@ -4,6 +4,11 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireStudent } from "@/lib/require-student";
 
+function isTimeUp(startedAt: Date, durationMinutes: number) {
+  const endMs = startedAt.getTime() + durationMinutes * 60 * 1000;
+  return Date.now() >= endMs;
+}
+
 const Schema = z.object({
   questionId: z.string().min(1),
   value: z.any().optional(),
@@ -32,6 +37,7 @@ export async function POST(
       status: true,
       studentId: true,
       examId: true,
+      startedAt: true,
       lockToken: true,
     },
   });
@@ -46,6 +52,32 @@ export async function POST(
 
   if (attempt.status !== "IN_PROGRESS") {
     return NextResponse.json({ error: "ATTEMPT_NOT_IN_PROGRESS" }, { status: 400 });
+  }
+
+  if (attempt.startedAt) {
+    const exam = await prisma.exam.findUnique({
+      where: { id: attempt.examId },
+      select: { durationMinutes: true },
+    });
+
+    if (exam && isTimeUp(attempt.startedAt, exam.durationMinutes)) {
+      const now = new Date();
+      const durationSeconds = exam.durationMinutes * 60;
+
+      await prisma.attempt.update({
+        where: { id: attempt.id },
+        data: {
+          status: "SUBMITTED",
+          submittedAt: now,
+          timeTakenSeconds: durationSeconds,
+          lockToken: null,
+          lockUpdatedAt: now,
+        },
+      });
+
+      (await cookies()).delete(`attempt_lock_${attempt.id}`);
+      return NextResponse.json({ error: "TIME_UP" }, { status: 409 });
+    }
   }
 
   if (attempt.lockToken) {

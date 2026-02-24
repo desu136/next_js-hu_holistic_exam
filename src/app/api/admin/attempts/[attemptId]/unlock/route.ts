@@ -18,15 +18,14 @@ export async function POST(
 
   if (!attempt) return NextResponse.json({ error: "ATTEMPT_NOT_FOUND" }, { status: 404 });
 
-  if (attempt.status !== "IN_PROGRESS") {
-    return NextResponse.json({ error: "ATTEMPT_NOT_IN_PROGRESS" }, { status: 400 });
-  }
-
   const now = new Date();
 
   const updated = await prisma.attempt.update({
     where: { id: attemptId },
     data: {
+      status: attempt.status === "LOCKED" ? "IN_PROGRESS" : undefined,
+      lockedAt: attempt.status === "LOCKED" ? null : undefined,
+      lockedReason: attempt.status === "LOCKED" ? null : undefined,
       lockToken: null,
       lockUpdatedAt: now,
     },

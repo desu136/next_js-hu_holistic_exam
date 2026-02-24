@@ -79,6 +79,7 @@ export default function StudentExamAttemptPage() {
 
   const violationSent = useRef(false);
   const fullscreenEver = useRef(false);
+  const autoSubmitSent = useRef(false);
 
   function incrementStrike(kind: "TAB_HIDDEN" | "FULLSCREEN_EXIT") {
     if (!attempt) return;
@@ -214,6 +215,8 @@ export default function StudentExamAttemptPage() {
       return;
     }
 
+    autoSubmitSent.current = false;
+
     const startedAt = new Date(attempt.startedAt).getTime();
     const durationSeconds = exam.durationMinutes * 60;
 
@@ -222,7 +225,9 @@ export default function StudentExamAttemptPage() {
       const elapsed = Math.floor((now - startedAt) / 1000);
       const remaining = durationSeconds - elapsed;
       setRemainingSeconds(remaining);
-      if (remaining <= 0) {
+      if (remaining <= 0 && !autoSubmitSent.current) {
+        autoSubmitSent.current = true;
+        setWarning("Time is up. Submitting...");
         void submitAttempt(true);
       }
     }

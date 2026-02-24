@@ -14,10 +14,12 @@ type ExamInfo = {
 
 type AttemptRow = {
   id: string;
-  status: "IN_PROGRESS";
+  status: "IN_PROGRESS" | "LOCKED";
   startedAt: string | null;
   lockUpdatedAt: string | null;
   lockToken: string | null;
+  lockedAt?: string | null;
+  lockedReason?: string | null;
   student: {
     username: string;
     firstName: string | null;
@@ -136,7 +138,7 @@ export default function AdminExamSessionsPage() {
       <div className="card mt-6 p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="text-sm text-zinc-700">
-            In progress: <span className="font-mono">{attempts.length}</span>
+            Sessions: <span className="font-mono">{attempts.length}</span>
           </div>
           <div className="flex flex-wrap gap-2">
             <button className="btn-ghost px-3 py-2" disabled={busy} onClick={() => void load()} type="button">
@@ -183,10 +185,13 @@ export default function AdminExamSessionsPage() {
                       <td className="py-2 text-zinc-600">{a.startedAt ? new Date(a.startedAt).toLocaleString() : "-"}</td>
                       <td className="py-2 font-mono">{remaining === null ? "--:--" : formatTimeLeft(remaining)}</td>
                       <td className="py-2">
-                        {a.lockToken ? (
-                          <span className="rounded-lg bg-zinc-100 px-2 py-1 font-mono text-xs">LOCKED</span>
+                        {a.status === "LOCKED" ? (
+                          <div className="grid gap-1">
+                            <span className="w-fit rounded-lg bg-zinc-100 px-2 py-1 font-mono text-xs">LOCKED</span>
+                            <span className="text-[11px] text-zinc-600">{a.lockedReason ?? "-"}</span>
+                          </div>
                         ) : (
-                          <span className="rounded-lg bg-emerald-50 px-2 py-1 font-mono text-xs text-emerald-700">OPEN</span>
+                          <span className="rounded-lg bg-emerald-50 px-2 py-1 font-mono text-xs text-emerald-700">IN_PROGRESS</span>
                         )}
                       </td>
                       <td className="py-2">
