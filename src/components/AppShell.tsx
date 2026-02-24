@@ -43,19 +43,34 @@ export function AppShell({
             <span className="hidden text-xs text-zinc-500 md:inline">{user.role}</span>
           </div>
           <div className="flex items-center gap-3">
+            <details className="relative md:hidden">
+              <summary className="list-none rounded-xl border border-emerald-100 bg-white/70 px-3 py-2 text-sm font-medium text-emerald-900 backdrop-blur hover:bg-white">
+                <span className="sr-only">Menu</span>
+                <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
+                  <path
+                    d="M4 6h16M4 12h16M4 18h16"
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                  />
+                </svg>
+              </summary>
+              <div className="absolute right-0 mt-2 w-52 overflow-hidden rounded-2xl border border-emerald-100 bg-white shadow-lg">
+                <div className="border-b border-emerald-100 px-4 py-3 text-xs text-zinc-600">
+                  Signed in as <span className="font-mono text-zinc-900">{user.username}</span>
+                </div>
+                <nav className="grid gap-1 p-2">
+                  {nav.map((item) => (
+                    <NavLink key={item.href} href={item.href} label={item.label} />
+                  ))}
+                </nav>
+              </div>
+            </details>
             <div className="hidden text-sm text-zinc-700 md:block">
               Signed in as <span className="font-mono text-zinc-900">{user.username}</span>
             </div>
             <LogoutButton />
-          </div>
-        </div>
-        <div className="mx-auto w-full max-w-6xl px-6 pb-3 md:hidden">
-          <div className="overflow-auto rounded-2xl border border-emerald-100 bg-white/70 p-2 backdrop-blur">
-            <nav className="flex items-center gap-1">
-              {nav.map((item) => (
-                <NavLink key={item.href} href={item.href} label={item.label} />
-              ))}
-            </nav>
           </div>
         </div>
       </div>
